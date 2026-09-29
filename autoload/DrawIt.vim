@@ -267,6 +267,8 @@ fun! DrawIt#DrawItStart(...)
   call SaveUserMaps("bn","","<space>","DrawIt")
   call SaveUserMaps("bn","","<home>","DrawIt")
   call SaveUserMaps("bn","","<end>","DrawIt")
+  call SaveUserMaps("bn","","<find>","DrawIt")
+  call SaveUserMaps("bn","","<select>","DrawIt")
   call SaveUserMaps("bn","","<pageup>","DrawIt")
   call SaveUserMaps("bn","","<pagedown>","DrawIt")
   call SaveUserMaps("bn","","<c-leftdrag>","DrawIt")
@@ -369,6 +371,8 @@ fun! DrawIt#DrawItStart(...)
   nmap <silent> <buffer> <script> v				:set lz<CR>:silent! call <SID>DrawSpace('v',4)<CR>:set nolz<CR>
   nmap <silent> <buffer> <script> <home>		:set lz<CR>:silent! call <SID>DrawSlantUpLeft()<CR>:set nolz<CR>
   nmap <silent> <buffer> <script> <end>			:set lz<CR>:silent! call <SID>DrawSlantDownLeft()<CR>:set nolz<CR>
+  nmap <silent> <buffer> <script> <find> :set lz<CR>:silent! call <SID>DrawSlantUpLeft()<CR>:set nolz<CR>
+  nmap <silent> <buffer> <script> <select> :set lz<CR>:silent! call <SID>DrawSlantDownLeft()<CR>:set nolz<CR>
   nmap <silent> <buffer> <script> <pageup>		:set lz<CR>:silent! call <SID>DrawSlantUpRight()<CR>:set nolz<CR>
   nmap <silent> <buffer> <script> <pagedown>	:set lz<CR>:silent! call <SID>DrawSlantDownRight()<CR>:set nolz<CR>
   nmap <silent> <buffer> <script> <Leader>>		:set lz<CR>:silent! call <SID>DrawFatRArrow()<CR>:set nolz<CR>
@@ -612,8 +616,14 @@ endfun
 " s:DrawLeft: {{{2
 fun! s:DrawLeft()
 "  call Dfunc("s:DrawLeft()")
+  if s:StartDrawAtNext(0,-1)
+    return
+  endif
+  if s:FastDrawAxis(2)
+    return
+  endif
   let curline   = getline(".")
-  let curcol    = virtcol(".")
+  let curcol    = s:DisplayCol()
   let b:lastdir = 2
   let keepatat  = @@
 "  call Decho("curcol#".curcol." curline<".curline.">")
@@ -679,8 +689,14 @@ endfun
 " s:DrawRight: {{{2
 fun! s:DrawRight()
 "  call Dfunc("s:DrawRight()")
+  if s:StartDrawAtNext(0,1)
+    return
+  endif
+  if s:FastDrawAxis(1)
+    return
+  endif
   let curline   = getline(".")
-  let curcol    = virtcol(".")
+  let curcol    = s:DisplayCol()
   let b:lastdir = 1
   let keepatat  = @@
   norm! vy
@@ -688,7 +704,7 @@ fun! s:DrawRight()
 "  call Decho("curchar<".curchar.">")
 
   " replace
-  if curcol == virtcol("$")
+  if curcol == s:LineEndCol(line("."))
    if g:drawit_mode == 'S'
     exe "norm! a".b:di_Shoriz."\<Esc>"
    elseif g:drawit_mode == 'D'
@@ -718,7 +734,7 @@ fun! s:DrawRight()
 
   " move and replace
   call s:MoveRight()
-  if curcol == virtcol("$")
+  if curcol == s:LineEndCol(line("."))
    if g:drawit_mode == 'S'
     exe "norm! i".b:di_Shoriz."\<Esc>"
    elseif g:drawit_mode == 'D'
@@ -762,8 +778,14 @@ endfun
 " s:DrawUp: {{{2
 fun! s:DrawUp()
 "  call Dfunc("s:DrawUp()")
+  if s:StartDrawAtNext(-1,0)
+    return
+  endif
+  if s:FastDrawAxis(3)
+    return
+  endif
   let curline   = getline(".")
-  let curcol    = virtcol(".")
+  let curcol    = s:DisplayCol()
   let b:lastdir = 3
   let keepatat  = @@
   norm! vy
@@ -771,7 +793,7 @@ fun! s:DrawUp()
 "  call Decho("curchar<".curchar.">")
 
   " replace
-  if curcol == 1 && virtcol("$") == 1
+  if curcol == 1 && s:LineEndCol(line(".")) == 1
 "   call Decho("case curcol#".curcol."==virtcol($): insert")
    if g:drawit_mode == 'S'
     exe "norm! i".b:di_Svert."\<Esc>"
@@ -808,7 +830,7 @@ fun! s:DrawUp()
   norm! vy
   let curchar= @@
 
-  if     curcol == 1 && virtcol("$") == 1
+  if     curcol == 1 && s:LineEndCol(line(".")) == 1
    if g:drawit_mode == 'S'
     exe "norm! i".b:di_Svert."\<Esc>"
    elseif g:drawit_mode == 'D'
@@ -848,8 +870,14 @@ endfun
 " s:DrawDown: {{{2
 fun! s:DrawDown()
 "  call Dfunc("s:DrawDown()")
+  if s:StartDrawAtNext(1,0)
+    return
+  endif
+  if s:FastDrawAxis(4)
+    return
+  endif
   let curline   = getline(".")
-  let curcol    = virtcol(".")
+  let curcol    = s:DisplayCol()
   let keepatat  = @@
   norm! vy
   let curchar   = @@
@@ -857,7 +885,7 @@ fun! s:DrawDown()
   let b:lastdir = 4
 
   " replace
-  if curcol == 1 && virtcol("$") == 1
+  if curcol == 1 && s:LineEndCol(line(".")) == 1
 "   call Decho("curcol=".curcol." $=1"
    if g:drawit_mode == 'S'
     exe "norm! i".b:di_Svert."\<Esc>"
@@ -895,7 +923,7 @@ fun! s:DrawDown()
   norm! vy
   let curchar= @@
 "  call Decho("curchar<".curchar.">")
-  if     curcol == 1 && virtcol("$") == 1
+  if     curcol == 1 && s:LineEndCol(line(".")) == 1
    if g:drawit_mode == 'S'
     exe "norm! i".b:di_Svert."\<Esc>"
    elseif g:drawit_mode == 'D'
@@ -935,17 +963,16 @@ endfun
 " s:DrawCorner: change a ┼ or a ╬ into an appropriate corner {{{2
 fun! s:DrawCorner()
 "  call Dfunc("s:DrawCorner()")
+  let ctr= matchstr(strpart(getline("."),col(".") - 1),'^.')
+  if ctr != b:di_Splus && ctr != b:di_Dplus
+   return
+  endif
   let keepatat= @@
   norm! vy
   let ctr= @@
-  if ctr != b:di_Splus   && ctr != b:di_Dplus
-   let @@= keepatat
-"   call Dret("s:DrawCorner : ctr<".ctr.">  (quick return)")
-   return
-  endif
 
   " cleft: Grab a copy of the character to the left of the cursor
-  if virtcol(".") > 1
+  if s:DisplayCol() > 1
    norm! hvyl
    let cleft= @@
   else
@@ -953,7 +980,7 @@ fun! s:DrawCorner()
   endif
 
   " cright: Grab a copy of the character to the right of the cursor
-  if virtcol(".") < virtcol("$")
+  if s:DisplayCol() < s:LineEndCol(line("."))
    norm! lvyh
    let cright= @@
   else
@@ -1640,14 +1667,7 @@ endfun
 " s:DrawSpace: clear character and move right {{{2
 fun! s:DrawSpace(chr,dir)
 "  call Dfunc("s:DrawSpace(chr<".a:chr."> dir<".a:dir.">)")
-  let curcol= virtcol(".")
-
-  " replace current location with arrowhead/space
-  if curcol == virtcol("$")-1
-   exe "norm! r".a:chr
-  else
-   exe "norm! r".a:chr
-  endif
+  exe "norm! r".a:chr
 
   if a:dir == 0
    let dir= b:lastdir
@@ -1672,6 +1692,12 @@ endfun
 " s:DrawSlantDownLeft: / {{{2
 fun! s:DrawSlantDownLeft()
 "  call Dfunc("s:DrawSlantDownLeft()")
+  if s:StartDrawAtNext(1,-1)
+    return
+  endif
+  if s:FastDrawDiagonal(1,-1,b:di_upleft,b:di_Supleft,b:di_upright,b:di_Supright)
+    return
+  endif
   call s:ReplaceDownLeft()		" replace
   call s:MoveDown()				" move
   call s:MoveLeft()				" move
@@ -1683,6 +1709,12 @@ endfun
 " s:DrawSlantDownRight: \ {{{2
 fun! s:DrawSlantDownRight()
 "  call Dfunc("s:DrawSlantDownRight()")
+  if s:StartDrawAtNext(1,1)
+    return
+  endif
+  if s:FastDrawDiagonal(1,1,b:di_upright,b:di_Supright,b:di_upleft,b:di_Supleft)
+    return
+  endif
   call s:ReplaceDownRight()	" replace
   call s:MoveDown()			" move
   call s:MoveRight()		" move
@@ -1694,6 +1726,12 @@ endfun
 " s:DrawSlantUpLeft: \ {{{2
 fun! s:DrawSlantUpLeft()
 "  call Dfunc("s:DrawSlantUpLeft()")
+  if s:StartDrawAtNext(-1,-1)
+    return
+  endif
+  if s:FastDrawDiagonal(-1,-1,b:di_upright,b:di_Supright,b:di_upleft,b:di_Supleft)
+    return
+  endif
   call s:ReplaceDownRight()	" replace
   call s:MoveUp()			" move
   call s:MoveLeft()			" move
@@ -1705,11 +1743,82 @@ endfun
 " s:DrawSlantUpRight: / {{{2
 fun! s:DrawSlantUpRight()
 "  call Dfunc("s:DrawSlantUpRight()")
+  if s:StartDrawAtNext(-1,1)
+    return
+  endif
+  if s:FastDrawDiagonal(-1,1,b:di_upleft,b:di_Supleft,b:di_upright,b:di_Supright)
+    return
+  endif
   call s:ReplaceDownLeft()	" replace
   call s:MoveUp()			" move
   call s:MoveRight()		" replace
   call s:ReplaceDownLeft()	" replace
 "  call Dret("s:DrawSlantUpRight")
+endfun
+
+" s:FastDrawDiagonal: update two cells without command-string movement {{{2
+fun! s:FastDrawDiagonal(row_delta,col_delta,diagonal,single_diagonal,replacement,single_replacement)
+  if g:drawit_mode != 'N' || b:di_erase || !&l:modifiable
+    return 0
+  endif
+  if strlen(a:diagonal) != 1 || strlen(a:replacement) != 1
+  \ || strlen(b:di_cross) != 1
+    return 0
+  endif
+
+  let row= line(".")
+  let col= s:DisplayCol()
+  let source= getline(row)
+  if source !~# '^[\x20-\x7e]*$' || col > strlen(source) + 1
+    return 0
+  endif
+
+  let target_row= row + a:row_delta
+  let insert_before= target_row < 1
+  let insert_after= target_row > line("$")
+  if insert_before || insert_after
+    let target= repeat(" ",max([strlen(source),col + a:col_delta,1]))
+  else
+    let target= getline(target_row)
+    if target !~# '^[\x20-\x7e]*$'
+      return 0
+    endif
+  endif
+
+  let target_col= max([1,col + a:col_delta])
+  let first= col <= strlen(source) ? strpart(source,col - 1,1) : ""
+  let second= target_col <= strlen(target) ? strpart(target,target_col - 1,1) : ""
+
+  let first_glyph= first == a:diagonal || first == b:di_cross
+  \ || (b:di_gfxchr && (first == a:single_diagonal || first == b:di_Scross))
+  let second_glyph= second == a:diagonal || second == b:di_cross
+  \ || (b:di_gfxchr && (second == a:single_diagonal || second == b:di_Scross))
+  let first= first_glyph ? b:di_cross : a:replacement
+  let second= second_glyph ? b:di_cross : a:replacement
+
+  if col > strlen(source)
+    let source .= repeat(" ",col - strlen(source))
+  endif
+  let source= strpart(source,0,col - 1) . first . strpart(source,col)
+  if target_col > strlen(target)
+    let target .= repeat(" ",target_col - strlen(target))
+  endif
+  let target= strpart(target,0,target_col - 1) . second . strpart(target,target_col)
+
+  call setline(row,source)
+  if insert_before
+    call append(row - 1,target)
+    let target_row= row
+  elseif insert_after
+    call append(row,target)
+    let target_row= row + 1
+  else
+    call setline(target_row,target)
+  endif
+
+  call cursor(target_row,target_col)
+  let b:lastdir= a:col_delta < 0 ? 2 : 1
+  return 1
 endfun
 
 " ---------------------------------------------------------------------
@@ -1721,12 +1830,304 @@ fun! s:MoveLeft()
 "  call Dret("s:MoveLeft : b:lastdir=".b:lastdir)
 endfun
 
+" s:DisplayWidth: count content cells without wrapped-line indentation {{{2
+fun! s:DisplayWidth(text)
+  if strchars(a:text) == strlen(a:text) && stridx(a:text,"\t") < 0
+    return strlen(a:text)
+  endif
+
+  let width= 0
+  let index= 0
+  while index < strlen(a:text)
+    let char= matchstr(strpart(a:text,index),'^.')
+    if empty(char)
+      let char= strpart(a:text,index,1)
+    endif
+    let width += strdisplaywidth(char,width)
+    let index += strlen(char)
+  endwhile
+  return width
+endfun
+
+" s:DisplayCol: current content column, independent of screen wrapping {{{2
+fun! s:DisplayCol()
+  let pos= getcurpos()
+  return s:DisplayWidth(strpart(getline(pos[1]),0,pos[2] - 1)) + 1 + pos[3]
+endfun
+
+" s:LineEndCol: content column immediately after the current line {{{2
+fun! s:LineEndCol(lnum)
+  return s:DisplayWidth(getline(a:lnum)) + 1
+endfun
+
+" s:AxisGlyph: choose the intersection or straight-line character {{{2
+fun! s:AxisGlyph(text, col, vertical)
+  let curchar= a:col <= strlen(a:text) ? strpart(a:text,a:col - 1,1) : ""
+  if a:vertical
+    return s:IsDrawItV(curchar) ? b:di_plus : b:di_vert
+  endif
+  return s:IsDrawItH(curchar) ? b:di_plus : b:di_horiz
+endfun
+
+
+" s:IsDrawItChar: identify existing DrawIt artwork {{{2
+fun! s:IsDrawItChar(chr)
+  if a:chr == b:di_horiz || a:chr == b:di_vert || a:chr == b:di_plus
+  \ || a:chr == b:di_upright || a:chr == b:di_upleft || a:chr == b:di_cross
+  \ || a:chr == b:di_ellipse || a:chr == ">" || a:chr == "<"
+  \ || a:chr == "^" || a:chr == "v" || a:chr == "_" || a:chr == "'" || a:chr == "."
+  \ || s:IsDrawItH(a:chr) || s:IsDrawItV(a:chr)
+    return 1
+  endif
+  return b:di_gfxchr
+  \ && (a:chr == b:di_Supright || a:chr == b:di_Supleft || a:chr == b:di_Scross)
+endfun
+
+" s:DrawCurrentAxisCell: draw at the cursor without moving {{{2
+fun! s:DrawCurrentAxisCell(vertical)
+  let text= getline(".")
+  let col= col(".")
+  if g:drawit_mode == 'N' && !b:di_erase && text =~# '^[\x20-\x7e]*$' && col <= strlen(text) + 1
+    let glyph= s:AxisGlyph(text,col,a:vertical)
+    if strlen(glyph) == 1
+      call setline(".",s:ReplaceAsciiCell(text,col,glyph))
+      call s:DrawCorner()
+      return
+    endif
+  endif
+
+  let curcol= s:DisplayCol()
+  let keepatat= @@
+  norm! vy
+  let curchar= @@
+  if a:vertical
+    let crossing= s:IsDrawItV(curchar)
+    if crossing
+      let glyph= g:drawit_mode == 'S' ? b:di_Splus : (g:drawit_mode == 'D' ? b:di_Dplus : b:di_plus)
+    else
+      let glyph= g:drawit_mode == 'S' ? b:di_Svert : (g:drawit_mode == 'D' ? b:di_Dvert : b:di_vert)
+    endif
+  else
+    let crossing= s:IsDrawItH(curchar)
+    if crossing
+      let glyph= g:drawit_mode == 'S' ? b:di_Splus : (g:drawit_mode == 'D' ? b:di_Dplus : b:di_plus)
+    else
+      let glyph= g:drawit_mode == 'S' ? b:di_Shoriz : (g:drawit_mode == 'D' ? b:di_Dhoriz : b:di_horiz)
+    endif
+  endif
+  if curcol == s:LineEndCol(line("."))
+    exe "norm! a".glyph."\<Esc>"
+  else
+    exe "norm! r".glyph
+  endif
+  let @@= keepatat
+  call s:DrawCorner()
+endfun
+
+" s:ShiftCanvasRight: open a column before the left edge {{{2
+fun! s:ShiftCanvasRight()
+  if !&l:modifiable
+    return 0
+  endif
+  let row= line(".")
+  let col= col(".")
+  for lnum in range(1,line("$"))
+    call setline(lnum," ".getline(lnum))
+  endfor
+  call cursor(row,col + 1)
+  return 1
+endfun
+
+" s:StartDrawAtNext: preserve text under the cursor for motion keys {{{2
+fun! s:StartDrawAtNext(row_delta,col_delta)
+  let curchar= matchstr(strpart(getline("."),col(".") - 1),'^.')
+  if curchar == "" || curchar == " " || s:IsDrawItChar(curchar)
+    return 0
+  endif
+
+  if a:col_delta < 0 && s:DisplayCol() == 1
+    if !s:ShiftCanvasRight()
+      return 0
+    endif
+  endif
+
+  if a:row_delta < 0
+    call s:MoveUp()
+  elseif a:row_delta > 0
+    call s:MoveDown()
+  endif
+  if a:col_delta < 0
+    call s:MoveLeft()
+  elseif a:col_delta > 0
+    call s:MoveRight()
+  endif
+
+  if a:row_delta == 0
+    call s:DrawCurrentAxisCell(0)
+  elseif a:col_delta == 0
+    call s:DrawCurrentAxisCell(1)
+  elseif a:row_delta == a:col_delta
+    call s:ReplaceDownRight()
+  else
+    call s:ReplaceDownLeft()
+  endif
+  let b:lastdir= a:col_delta < 0 ? 2 : (a:col_delta > 0 ? 1 : (a:row_delta < 0 ? 3 : 4))
+  return 1
+endfun
+" s:ReplaceAsciiCell: replace or append one printable ASCII cell {{{2
+fun! s:ReplaceAsciiCell(text, col, chr)
+  if a:col > strlen(a:text)
+    return a:text . a:chr
+  endif
+  return strpart(a:text,0,a:col - 1) . a:chr . strpart(a:text,a:col)
+endfun
+
+" s:FastDrawAxis: draw a common ASCII step without per-cell Ex commands {{{2
+fun! s:FastDrawAxis(direction)
+  if g:drawit_mode != 'N' || b:di_erase || !&l:modifiable
+    return 0
+  endif
+
+  let row= line(".")
+  let col= col(".")
+  let text= getline(row)
+  if text !~# '^[\x20-\x7e]*$' || col > strlen(text) + 1
+    return 0
+  endif
+
+  if a:direction == 1 || a:direction == 2
+    let first= s:AxisGlyph(text,col,0)
+    if strlen(first) != 1
+      return 0
+    endif
+    let updated= s:ReplaceAsciiCell(text,col,first)
+
+    if a:direction == 1
+      let secondcol= col + 1
+      let second= s:AxisGlyph(text,secondcol,0)
+      if strlen(second) != 1
+        return 0
+      endif
+      let updated= s:ReplaceAsciiCell(updated,secondcol,second)
+      let corner1= col
+      let corner2= secondcol
+      let finalcol= secondcol
+    else
+      if col > strlen(text)
+        return 0
+      endif
+      if col > 1
+        let secondcol= col - 1
+        let second= s:AxisGlyph(text,secondcol,0)
+        if strlen(second) != 1
+          return 0
+        endif
+        let updated= s:ReplaceAsciiCell(updated,secondcol,second)
+        let corner1= col
+        let corner2= secondcol
+        let finalcol= secondcol
+      else
+        let corner1= min([col + 1,strlen(updated)])
+        let corner2= col
+        let finalcol= col
+      endif
+    endif
+
+    call setline(row,updated)
+    call cursor(row,corner1)
+    call s:DrawCorner()
+    call cursor(row,corner2)
+    call s:DrawCorner()
+    call cursor(row,finalcol)
+  else
+    let first= s:AxisGlyph(text,col,1)
+    if strlen(first) != 1
+      return 0
+    endif
+    let current= s:ReplaceAsciiCell(text,col,first)
+    let targetrow= row + (a:direction == 3 ? -1 : 1)
+    let insert_before= a:direction == 3 && targetrow < 1
+    let insert_after= a:direction == 4 && targetrow > line("$")
+
+    if insert_before || insert_after
+      let targettext= repeat(" ",max([strlen(current),col]))
+    else
+      let targettext= getline(targetrow)
+      if targettext !~# '^[\x20-\x7e]*$'
+        return 0
+      endif
+      if strlen(targettext) < col
+        let targettext .= repeat(" ",col - strlen(targettext))
+      endif
+    endif
+
+    let second= s:AxisGlyph(targettext,col,1)
+    if strlen(second) != 1
+      return 0
+    endif
+    let targettext= s:ReplaceAsciiCell(targettext,col,second)
+
+    call setline(row,current)
+    if insert_before
+      call append(row - 1,targettext)
+      let originalrow= row + 1
+      let targetrow= row
+    elseif insert_after
+      call append(row,targettext)
+      let originalrow= row
+      let targetrow= row + 1
+    else
+      call setline(targetrow,targettext)
+      let originalrow= row
+    endif
+    call cursor(originalrow,col)
+    call s:DrawCorner()
+    call cursor(targetrow,col)
+    call s:DrawCorner()
+    call cursor(targetrow,col)
+  endif
+
+  let b:lastdir= a:direction
+  return 1
+endfun
+" s:PadLine: extend a line to a display column in one buffer update {{{2
+fun! s:PadLine(lnum, curcol)
+  let text= getline(a:lnum)
+  let endcol= s:LineEndCol(a:lnum)
+  if endcol <= a:curcol
+    let text .= repeat(" ",a:curcol - endcol + 1)
+    call setline(a:lnum,text)
+    call cursor(a:lnum,strlen(text))
+  endif
+endfun
+
+" s:InsertBlankLine: make a blank row above/below the current row {{{2
+fun! s:InsertBlankLine(lnum, curcol, before)
+  let blanks= substitute(getline(a:lnum),'.',' ','g')
+  if empty(blanks) && a:curcol == 0
+    call setline(a:lnum," ")
+    call cursor(a:lnum,1)
+  else
+    let blanks= repeat(" ",max([strlen(blanks),a:curcol + 1]))
+    if a:before
+      call append(a:lnum - 1,blanks)
+      call cursor(a:lnum,a:curcol + 1)
+    else
+      call append(a:lnum,blanks)
+      call cursor(a:lnum + 1,a:curcol + 1)
+    endif
+  endif
+endfun
+
 " ---------------------------------------------------------------------
 " s:MoveRight: {{{2
 fun! s:MoveRight()
 "  call Dfunc("s:MoveRight()")
-  if virtcol(".") >= virtcol("$") - 1
-   exe "norm! A \<Esc>"
+  if s:DisplayCol() >= s:LineEndCol(line(".")) - 1
+   let curline= line(".")
+   let text= getline(curline) . " "
+   call setline(curline,text)
+   call cursor(curline,strlen(text))
   else
    norm! l
   endif
@@ -1739,20 +2140,12 @@ endfun
 fun! s:MoveUp()
 "  call Dfunc("s:MoveUp()")
   if line(".") == 1
-   let curcol= virtcol(".") - 1
-   if curcol == 0 && virtcol("$") == 1
-     exe "norm! i \<Esc>"
-   elseif curcol == 0
-     exe "norm! YP:s/./ /ge\<CR>0r "
-   else
-     exe "norm! YP:s/./ /ge\<CR>0".curcol."lr "
-   endif
+   let curcol= s:DisplayCol() - 1
+   call s:InsertBlankLine(line("."),curcol,1)
   else
-   let curcol= virtcol(".")
+   let curcol= s:DisplayCol()
    norm! k
-   while virtcol("$") <= curcol
-     exe "norm! A \<Esc>"
-   endwhile
+   call s:PadLine(line("."),curcol)
   endif
   let b:lastdir= 3
 "  call Dret("s:MoveUp : b:lastdir=".b:lastdir)
@@ -1763,32 +2156,57 @@ endfun
 fun! s:MoveDown()
 "  call Dfunc("s:MoveDown()")
   if line(".") == line("$")
-   let curcol= virtcol(".") - 1
-   if curcol == 0 && virtcol("$") == 1
-    exe "norm! i \<Esc>"
-   elseif curcol == 0
-    exe "norm! Yp:s/./ /ge\<CR>0r "
-   else
-    exe "norm! Yp:s/./ /ge\<CR>0".curcol."lr "
-   endif
+   let curcol= s:DisplayCol() - 1
+   call s:InsertBlankLine(line("."),curcol,0)
   else
-   let curcol= virtcol(".")
+   let curcol= s:DisplayCol()
    norm! j
-   while virtcol("$") <= curcol
-    exe "norm! A \<Esc>"
-   endwhile
+   call s:PadLine(line("."),curcol)
   endif
   let b:lastdir= 4
 "  call Dret("s:MoveDown : b:lastdir=".b:lastdir)
 endfun
 
 " ---------------------------------------------------------------------
+" s:ReplaceAsciiDiagonal: replace a diagonal cell without Normal-mode commands {{{2
+fun! s:ReplaceAsciiDiagonal(diagonal, single_diagonal, replacement, single_replacement)
+  let text= getline(".")
+  let curcol= col(".")
+  if strchars(text) != strlen(text) || stridx(text,"\t") >= 0 || curcol > strlen(text) + 1
+    return 0
+  endif
+
+  let curchar= curcol <= strlen(text) ? strpart(text,curcol - 1,1) : ""
+  if curchar == a:diagonal || curchar == b:di_cross
+  \ || (b:di_gfxchr && (curchar == a:single_diagonal || curchar == b:di_Scross))
+    let replacement= g:drawit_mode == 'S' ? b:di_Scross : b:di_cross
+  else
+    let replacement= g:drawit_mode == 'S' ? a:single_replacement : a:replacement
+  endif
+  if strlen(replacement) != 1
+    return 0
+  endif
+
+  if curcol > strlen(text)
+    let text .= replacement
+  else
+    let text= strpart(text,0,curcol - 1) . replacement . strpart(text,curcol)
+  endif
+  call setline(".",text)
+  return 1
+endfun
+
+" ---------------------------------------------------------------------
 " s:ReplaceDownLeft: / X  (upright) {{{2
 fun! s:ReplaceDownLeft()
 "  call Dfunc("s:ReplaceDownLeft()")
-  let curcol   = virtcol(".")
+  let curcol   = s:DisplayCol()
   let keepatat = @@
-  if curcol != virtcol("$")
+  if s:ReplaceAsciiDiagonal(b:di_upleft,b:di_Supleft,b:di_upright,b:di_Supright)
+   let @@= keepatat
+   return
+  endif
+  if curcol != s:LineEndCol(line("."))
    norm! vy
    let curchar= @@
 
@@ -1797,10 +2215,9 @@ fun! s:ReplaceDownLeft()
    if curchar == b:di_upleft   || curchar == b:di_cross
     let chg2cross = 1
    elseif b:di_gfxchr
-	" performing following test only if gfx drawing characters exist
-    if curchar == b:di_Supleft || curchar == b:di_Scross
-     let chg2cross = 1
-    endif
+     if curchar == b:di_Supleft || curchar == b:di_Scross
+      let chg2cross = 1
+     endif
    endif
 
    if chg2cross
@@ -1831,9 +2248,13 @@ endfun
 " s:ReplaceDownRight: \ X  (upleft) {{{2
 fun! s:ReplaceDownRight()
 "  call Dfunc("s:ReplaceDownRight()")
-  let curcol   = virtcol(".")
+  let curcol   = s:DisplayCol()
   let keepatat = @@
-  if curcol != virtcol("$")
+  if s:ReplaceAsciiDiagonal(b:di_upright,b:di_Supright,b:di_upleft,b:di_Supleft)
+   let @@= keepatat
+   return
+  endif
+  if curcol != s:LineEndCol(line("."))
    norm! vy
    let curchar= @@
 "   call Decho("case curcol#".curcol." == virtcol($)  drawit_mode<".g:drawit_mode.">  curchar<".curchar.">")
@@ -1843,10 +2264,9 @@ fun! s:ReplaceDownRight()
    if curchar == b:di_upright   || curchar == b:di_cross
     let chg2cross = 1
    elseif b:di_gfxchr
-	" performing following test only if gfx drawing characters exist
-    if curchar == b:di_Supright || curchar == b:di_Scross
-     let chg2cross = 1
-    endif
+     if curchar == b:di_Supright || curchar == b:di_Scross
+      let chg2cross = 1
+     endif
    endif
 
    if chg2cross
