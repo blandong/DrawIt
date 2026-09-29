@@ -2856,7 +2856,9 @@ endfun
 fun! s:Canvas()
 "  call Dfunc("s:Canvas()")
 
+  call inputsave()
   let lines  = input("how many lines under the cursor? ")
+  call inputrestore()
   let curline= line('.')
   if curline < line('$')
    exe "norm! ".lines."o\<esc>"
